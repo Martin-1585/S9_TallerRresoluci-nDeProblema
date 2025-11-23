@@ -1,3 +1,5 @@
+package udla.molalla.S9ResolucionProblemas.clases;
+
 import java.time.LocalDate;
 
 public class Producto {
@@ -79,5 +81,9 @@ public class Producto {
                 "\nPVP: $" + pvp +
                 "\nCosto: $" + cost);
 
+    }
+
+    public void mostrarIds(){
+        System.out.println("Producto " + id + " con ID: " + id);
     }
 }

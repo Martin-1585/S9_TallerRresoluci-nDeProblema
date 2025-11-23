@@ -1,3 +1,5 @@
+package udla.molalla.S9ResolucionProblemas.clases;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -6,14 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Inventario extends Producto{
+public class Inventario extends Producto {
     /**Declaración de variable global*/
     private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
     private static final int MAXYEAR = 2030;
     private static final int MAXTIME = 3;
     /**Declaración de variables*/
     private int maxSpace = 100;
-    private double maxBudget = 2000;
+    private double maxBudget = 20000;
     private String name;
     private int amount;
     private LocalDate restockDate;
@@ -136,7 +138,7 @@ public class Inventario extends Producto{
 
 
     public Boolean valorPermitido(int value, int max, String warning){
-        boolean allow;
+        boolean allow = false;
         if (value <= 0 || value > max){
             System.out.println(warning);
             allow = false;
@@ -148,11 +150,15 @@ public class Inventario extends Producto{
 
     public Integer ingresoEnteros(int max, String message){
         boolean allow = false;
-        int value;
+        int value = 0;
         do {
-            System.out.print(message);
-            value = entry.nextInt();
-            allow = valorPermitido(value, max, "Valor no permitido/Sobrepasa el total");
+            try{
+                System.out.print(message);
+                value = Integer.parseInt(entry.nextLine());
+                allow = valorPermitido(value, max, "Valor no permitido/Sobrepasa el total");
+            } catch (NumberFormatException e){
+                System.out.println("\tNO SE PUEDE INGRESAR CARACTERES EN ESTE ESPACIO");
+            }
         } while(!allow);
         return value;
     }
@@ -170,11 +176,15 @@ public class Inventario extends Producto{
 
     public Double ingresoCosto(double max, String message){
         boolean allow = false;
-        double value;
+        double value = 0;
         do {
-            System.out.print(message);
-            value = entry.nextDouble();
-            allow = costoPermitido(value, max, "Valor no permitido/Sobrepasa el total");
+            try{
+                System.out.print(message);
+                value = Double.parseDouble(entry.nextLine());
+                allow = costoPermitido(value, max, "Valor no permitido/Sobrepasa el total");
+            } catch(NumberFormatException e){
+                System.out.println("\tNO SE PUEDE INGRESAR CARACTERES EN ESTE ESPACIO");
+            }
         } while(!allow);
         return value;
     }
@@ -185,14 +195,14 @@ public class Inventario extends Producto{
             System.out.println("\t-> !DEBE VENDER PRODUCTOS PARA LIBERAR ESPACIO¡ <-\n");
             return;
         }
-        entry.nextLine();
+        System.out.println("\tESPACIO DE ALMACENAMIENTO: " + maxSpace + " UNIDADES");
+        System.out.println("\tPRESUPUESTO DEL INVENTARIO: $" + maxBudget + "\n");
         System.out.println("=======INGRESO DE PRODUCTO=======");
         name = validName("Ingrese el nombre del producto");
         amount = ingresoEnteros(maxSpace, "Ingrese la cantidad de productos: ");
-        entry.nextLine();
         restockDate = allowDate("Ingrese la fecha de reabastecimiento (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
-        pvp = ingresoCosto(maxBudget, "Ingrese el precio de venta al publico del producto: $");
-        cost = (amount*pvp);
+        cost = ingresoCosto(maxBudget, "Ingrese el costo unitario del producto: $");
+        pvp = (cost * 1.10); //Es por el 10% por el costo unitario
 
         if (cost > maxBudget){
             System.out.println("\t-> !HA USADO TODO EL PRESUPUESTO DEL INVENTARIO¡ <-");
@@ -202,7 +212,7 @@ public class Inventario extends Producto{
 
         maxSpace-=amount;;
         maxBudget-=cost;
-        maxCost+=cost;
+        maxCost+=pvp;
 
         Producto nuevoproducto = new Producto(name,amount,restockDate,pvp,cost);
         productos.add(nuevoproducto);
@@ -224,7 +234,8 @@ public class Inventario extends Producto{
             p.mostrarInfo();
             System.out.println("======================================================================");
         }
-        System.out.println("\tEl costo total de todos los productos es de:  $" + maxCost + " de $" + maxBudget);
+        System.out.println("\tEL COSTO TOTAL DEL INVENTARIO ES DE: $" + maxCost);
+        System.out.println("\tEL PRESUPUESTO DEL INVENTARIO: $" + maxBudget);
     }
 
     public void eliminarProducto(){
@@ -233,6 +244,10 @@ public class Inventario extends Producto{
         if (productos.isEmpty()){
             System.out.println("\tNO HAY PRODUCTOS A ELIMINAR");
             return;
+        }
+
+        for (Producto p: productos){
+            p.mostrarIds();
         }
 
         idErase = ingresoEnteros(500, "Ingrese el ID del producto a eliminar: ");
@@ -271,7 +286,12 @@ public class Inventario extends Producto{
             return;
         }
 
+        for (Producto p: productos){
+            p.mostrarIds();
+        }
+
         idEdit = ingresoEnteros(500, "Ingrese el ID del producto que desea cambiar: ");
+
         for (Producto p: productos){
             if (p.getId() == idEdit){
                 found = true;
@@ -279,10 +299,9 @@ public class Inventario extends Producto{
                 double oldCost = p.getCost();
                 int restoreSpace = maxSpace + oldAmount;
                 double restoreBudget = maxBudget + oldCost;
-                entry.nextLine();
+
                 nuevoName = validName("Ingrese el nuevo nombre del producto: ");
                 nuevoAmount = ingresoEnteros(restoreSpace, "Ingrese la nueva cantidad: ");
-                entry.nextLine();
                 nuevoDate = allowDate("Ingrese la nueva fecha de reabastecimiento (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
                 nuevoPvp = ingresoCosto(restoreBudget, "Ingrese el nuevo precio de venta al público: $ ");
                 nuevoCost = (nuevoAmount * nuevoPvp);
@@ -332,6 +351,7 @@ public class Inventario extends Producto{
             if (p.getId() == saleId){
                 found = true;
                 if (p.getAmount() == 0){
+                    System.out.println("\tPRODUCTO AGOTADO, DEBE REABASTECER");
                     entry.nextLine();
                     restock("\tEL FORMATO DE LA FECHA ES INCORRECTO");
                     restockAmount = ingresoEnteros(maxSpace, "Ingrese la cantidad para reabastecer el producto: ");
@@ -346,7 +366,7 @@ public class Inventario extends Producto{
                     System.out.println("=========================================");
                     System.out.println("\tSE PROCEDE A LA VENTA");
                 }
-                entry.nextLine();
+
                 saleDate = allowSaleDate("Información no valida, ingrese nuevamente");
                 System.out.println("=====================================");
                 System.out.println("El producto con nombre: " + p.getName()
@@ -355,15 +375,17 @@ public class Inventario extends Producto{
                 System.out.println("=====================================");
                 saleAmount = ingresoEnteros(p.getAmount(), "Ingrese la cantidad a vender: ");
                 p.setAmount(amount - saleAmount);
+                System.out.println("=====================================");
                 System.out.println("\tUNIDADES: " + p.getAmount());
                 maxSpace+=saleAmount;
                 System.out.println("\tESPACIO: " + maxSpace);
+                System.out.println("=====================================");
                 deliveryDate = deliveryTime(saleDate);
                 System.out.println("El producto llegara en un limite de " + MAXTIME + " dias, es decir el " + deliveryDate);
                 sale = (pvp * saleAmount);
-                System.out.print("\tLa venta se realiza por un precio de: $" + sale);
+                System.out.print("\n\tLa venta se realiza por un precio de: $" + sale);
                 maxBudget+=sale;
-                System.out.println("\tPRESUPUESTO: " + maxBudget);
+                System.out.println("\n\tPRESUPUESTO DEL INVENTARIO: $" + maxBudget);
                 break;
             }
         }
@@ -371,6 +393,5 @@ public class Inventario extends Producto{
         if (!found){
             System.out.println("\t=== EL ID ingresado no existe en el inventario para vender ===\n");
         }
-
     }
 }

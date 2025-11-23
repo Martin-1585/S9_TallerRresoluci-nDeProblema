@@ -1,3 +1,7 @@
+package udla.molalla.S9ResolucionProblemas.main;
+
+import udla.molalla.S9ResolucionProblemas.clases.Inventario;
+
 import java.util.Scanner;
 
 
@@ -29,11 +33,13 @@ public class GestionDeInventario {
                 case 5:
                     inventario.venderProductos();
                     break;
+                case 6:
+                    System.out.println("\tSALIENDO DEL SISTEMA");
                 default:
                     break;
             }
         } while(opcion != 6);
-        System.out.println("\n\tSALIENDO DEL SISTEMA, HASTA LA PROXIMA");
+        System.out.println("\n\tHASTA LA PROXIMA...");
 
         entry.close();
     }
