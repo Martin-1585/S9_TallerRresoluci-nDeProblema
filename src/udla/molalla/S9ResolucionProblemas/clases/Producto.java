@@ -7,9 +7,6 @@ public class Producto {
     private String name;
     private int amount;
     private LocalDate restockDate;
-    /*private int restockYear;
-    private int restockMonth;
-    private int restockDay;*/
     private double pvp;
     private static int contador = 1;
     private int id;
