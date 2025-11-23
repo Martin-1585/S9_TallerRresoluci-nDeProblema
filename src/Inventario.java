@@ -1,18 +1,22 @@
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class Inventario extends Producto{
+    /**Declaración de variable global*/
+    private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
+    private static final int MAXYEAR = 2030;
+    private static final int MAXTIME = 3;
     /**Declaración de variables*/
-    private int maxSpace = 30;
+    private int maxSpace = 100;
     private double maxBudget = 2000;
-    private int maxTime = 3;
     private String name;
     private int amount;
-    private int year;
-    private int month;
-    private int day;
+    private LocalDate restockDate;
     private double pvp;
     private double cost;
     private double maxCost = 0;
@@ -34,7 +38,6 @@ public class Inventario extends Producto{
         boolean allow = true;
         if (name == null || name.isEmpty()){
             allow = false;
-
         }
         for(char check : name.toCharArray()){
             if (!Character.isAlphabetic(check)){
@@ -58,29 +61,79 @@ public class Inventario extends Producto{
         return name;
     }
 
-    public Boolean allowYear(int restockYear, String warning){
-        LocalDate todayDate = LocalDate.now();
-        int year = todayDate.getYear();
-        boolean allow;
-        if (restockYear != year){
+    private LocalDate allowDate(String message, String warning){
+        String date;
+        LocalDate restockDate;
+        int year, yearComputer;
+
+        System.out.print(message);
+        date = entry.nextLine().trim();
+        try{
+            restockDate = LocalDate.parse(date,FORMAT);
+            year = restockDate.getYear();
+            yearComputer = LocalDate.now().getYear();
+            if (year < yearComputer || year > MAXYEAR){
+                System.out.println("\tAÑO NO VALIDO, INGRESE NUEVAMENTE");
+                return allowDate("Ingrese nuevamente la fecha (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
+            }
+            return restockDate;
+        } catch (DateTimeParseException e){
             System.out.println(warning);
-            allow = false;
-        } else {
-            allow = true;
+            return allowDate("Ingrese nuevamente la fecha (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
         }
-        return allow;
     }
 
-    public Integer validYear(String message){
-        boolean allow = false;
-        int value;
-        do {
-            System.out.print(message);
-            value = entry.nextInt();
-            allow = allowYear(value, "Año no valido");
-        }while(!allow);
-        return value;
+    public LocalDate allowSaleDate(String warning){
+        LocalDate saleDate;
+
+        try {
+            saleDate = allowDate("Ingrese la fecha en la que se realizo la venta (dd/MM/yyyy): ", "Información no válida, ingrese nuevamente");
+            if (saleDate.isEqual(restockDate)){
+                System.out.println("\tLAS FECHAS DE VENTA Y REABASTECIMIENTO NO PUEDEN SER IGUALES");
+                return allowSaleDate("Información noo valida, ingrese nuevamente");
+            } else if (saleDate.isBefore(restockDate)) {
+                System.out.println("\tLA FECHA DE VENTA NO PUEDE SER MENOR A LA FECHA DE REABASTECIMIENTO");
+                return allowSaleDate("Información noo valida, ingrese nuevamente");
+            } else {
+                return saleDate;
+            }
+        }catch (DateTimeParseException e){
+            System.out.println(warning);
+            return allowSaleDate("Información noo valida, ingrese nuevamente");
+        }
     }
+
+    public LocalDate deliveryTime(LocalDate saleDate){
+        int day = saleDate.getDayOfMonth();
+        int month = saleDate.getMonthValue();
+        int year = saleDate.getYear();
+        int delivery;
+        LocalDate deliveryDate;
+
+        delivery = day + MAXTIME;
+        deliveryDate = LocalDate.of(year,month,delivery);
+
+        return deliveryDate;
+    }
+
+    public LocalDate restock(String warning){
+        LocalDate todayDate;
+
+        try {
+            todayDate = allowDate("Ingrese la fecha de reabastecimiento (dd/MM/aaaa): ", "Información no valida, ingrese nuevamente");
+            if (todayDate.isEqual(restockDate)){
+                System.out.println("\tLA FECHA INGRESADA COINCIDE CON LA FECHA DE REABASTECIMIENTO");
+                return todayDate;
+            } else {
+                System.out.println("\tLA FECHA INGRESADA NO COINCIDE CON LA FECHA DE REABASTECIMIENTO, INGRESE NUEVAMENTE");
+                return restock("\tEL FORMATO DE LA FECHA ES INCORRECTO");
+            }
+        }catch (DateTimeParseException e){
+            System.out.println(warning);
+            return restock("\tEL FORMATO DE LA FECHA ES INCORRECTO");
+        }
+    }
+
 
     public Boolean valorPermitido(int value, int max, String warning){
         boolean allow;
@@ -91,17 +144,6 @@ public class Inventario extends Producto{
             allow = true;
         }
         return allow;
-    }
-
-    public Integer valoresSinReduccion(int max, String message){
-        boolean allow = false;
-        int value;
-        do {
-            System.out.print(message);
-            value = entry.nextInt();
-            allow = valorPermitido(value, max, "Valor no permitido");
-        } while(!allow);
-        return value;
     }
 
     public Integer ingresoEnteros(int max, String message){
@@ -138,39 +180,33 @@ public class Inventario extends Producto{
     }
 
     public void ingresarDatos(){
+        if (maxSpace == 0){
+            System.out.println("\t-> !HA USADO TODO EL ESPACIO DEL INVENTARIO¡ <-");
+            System.out.println("\t-> !DEBE VENDER PRODUCTOS PARA LIBERAR ESPACIO¡ <-\n");
+            return;
+        }
         entry.nextLine();
         System.out.println("=======INGRESO DE PRODUCTO=======");
         name = validName("Ingrese el nombre del producto");
         amount = ingresoEnteros(maxSpace, "Ingrese la cantidad de productos: ");
-        year = validYear("Ingrese el año para la fecha de reabastecimiento: ");
-        month = valoresSinReduccion(12, "Ingrese el mes para la fecha de reabastecimiento: ");
-        day = valoresSinReduccion(31, "Ingrese el día de la fecha para el reabastecimiento: ");
-        pvp = ingresoCosto(maxBudget, "Ingrese el precio de venta al publico del producto: ");
+        entry.nextLine();
+        restockDate = allowDate("Ingrese la fecha de reabastecimiento (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
+        pvp = ingresoCosto(maxBudget, "Ingrese el precio de venta al publico del producto: $");
         cost = (amount*pvp);
 
-        maxSpace-=amount;
-
-        if (maxSpace <= 0){
-            maxSpace = 0;
-            System.out.println("\t-> !HA USADO TODO EL ESPACIO DEL INVENTARIO¡ <-");
+        if (cost > maxBudget){
+            System.out.println("\t-> !HA USADO TODO EL PRESUPUESTO DEL INVENTARIO¡ <-");
             System.out.println("\t-> !NO SE HA AGREGADO EL ULTIMO PRODUCTO QUE INGRESO¡ <-\n");
             return;
         }
 
+        maxSpace-=amount;;
+        maxBudget-=cost;
         maxCost+=cost;
 
-        maxBudget-=maxCost;
-
-        if (maxBudget <= 0){
-            maxBudget = 0;
-            System.out.println("Ha gastado todo el presupuesto");
-            return;
-        }
-        Producto nuevoproducto = new Producto(name,amount,year,month,day,pvp,cost);
-
+        Producto nuevoproducto = new Producto(name,amount,restockDate,pvp,cost);
         productos.add(nuevoproducto);
         System.out.println("\tSe ha agregado de manera exitosa el producto: " + name + " con ID: " + nuevoproducto.getId());
-
     }
 
     public void mostrarInfo(){
@@ -199,15 +235,19 @@ public class Inventario extends Producto{
             return;
         }
 
-        idErase = valoresSinReduccion(500, "Ingrese el ID del producto a eliminar: ");
+        idErase = ingresoEnteros(500, "Ingrese el ID del producto a eliminar: ");
 
-        for (int i = 0; i < productos.size(); i++){
-            if (productos.get(i).getId() == idErase){
-                productos.remove(i);
+        for (Producto p: productos){
+            if (p.getId() == idErase){
                 found = true;
+                maxSpace+=p.getAmount();
+                maxBudget+=p.getCost();
+                maxCost-=p.getCost();
+                productos.remove(p);
                 System.out.println("\tEL producto " + name + "con ID: " + idErase + " ha sido eliminado de manera correcta");
-                maxSpace+=amount;
                 System.out.println("Ahora se tiene espacio para: " + maxSpace + " unidades");
+                System.out.println("Ahora se tiene un presupuesto de $: " + maxBudget);
+                System.out.println("Ahora se tiene costo total de $: " + maxCost);
                 break;
             }
         }
@@ -222,9 +262,7 @@ public class Inventario extends Producto{
         int idEdit;
         String nuevoName;
         int nuevoAmount;
-        int nuevoYear;
-        int nuevoMonth;
-        int nuevoDay;
+        LocalDate nuevoDate;
         double nuevoPvp;
         double nuevoCost;
 
@@ -233,21 +271,38 @@ public class Inventario extends Producto{
             return;
         }
 
-        idEdit = valoresSinReduccion(500, "Ingrese el ID del producto que desea cambiar: ");
-        for (int i = 0; i < productos.size(); i++){
-            if (productos.get(i).getId() == idEdit){
+        idEdit = ingresoEnteros(500, "Ingrese el ID del producto que desea cambiar: ");
+        for (Producto p: productos){
+            if (p.getId() == idEdit){
                 found = true;
+                int oldAmount = p.getAmount();
+                double oldCost = p.getCost();
+                int restoreSpace = maxSpace + oldAmount;
+                double restoreBudget = maxBudget + oldCost;
                 entry.nextLine();
                 nuevoName = validName("Ingrese el nuevo nombre del producto: ");
-                nuevoAmount = ingresoEnteros(maxSpace, "Ingrese la nueva cantidad: ");
-                nuevoYear = validYear("Ingrese el nuevo año para la fecha de reabastecimiento: ");
-                nuevoMonth = valoresSinReduccion(12, "Ingrese el nuevo mes para la fecha de reabastecimiento: ");
-                nuevoDay = valoresSinReduccion(31, "Ingrese el nuevo día para la fecha de reabastecimiento: ");
-                nuevoPvp = ingresoCosto(maxBudget, "Ingrese el nuevo precio de venta al público: $ ");
+                nuevoAmount = ingresoEnteros(restoreSpace, "Ingrese la nueva cantidad: ");
+                entry.nextLine();
+                nuevoDate = allowDate("Ingrese la nueva fecha de reabastecimiento (dd/MM/aaaa): ", "Información no valido, ingrese nuevamente");
+                nuevoPvp = ingresoCosto(restoreBudget, "Ingrese el nuevo precio de venta al público: $ ");
                 nuevoCost = (nuevoAmount * nuevoPvp);
 
-                Producto editProduct = new Producto(nuevoName, nuevoAmount, nuevoYear, nuevoMonth, nuevoDay, nuevoPvp, nuevoCost);
-                productos.set(i, editProduct);
+                if (nuevoCost > restoreBudget){
+                    System.out.println("\t-> !EL NUEVO COSTO EXCEDE EL PRESUPUESTO: $" + restoreBudget + "¡ <-");
+                    System.out.println("\t-> !NO SE HA EDITADO EL ULTIMO PRODUCTO QUE INGRESO¡ <-\n");
+                }
+
+                maxBudget = (restoreBudget - nuevoCost);
+                maxCost = (maxCost - oldCost + nuevoCost);
+                maxSpace = (restoreSpace - nuevoAmount);
+
+                p.setName(nuevoName);
+                p.setAmount(nuevoAmount);
+                p.setRestockDate(nuevoDate);
+                p.setPvp(nuevoPvp);
+                p.setCost(nuevoCost);
+
+                System.out.println("\t=== SE HA EDITADO DE MANERA ADECUADA EL PRODUCTO ===\n");
                 break;
             }
         }
@@ -255,8 +310,67 @@ public class Inventario extends Producto{
         if (!found){
             System.out.println("\t=== EL ID ingresado no existe en el inventario para editar ===\n");
         }
-
     }
 
+    public void venderProductos(){
+        LocalDate deliveryDate;
+        LocalDate saleDate;
+        boolean found = false;
+        int saleId;
+        int saleAmount;
+        double sale;
+        double nuevoCost;
+        int restockAmount;
 
+        if (productos.isEmpty()){
+            System.out.println("\tNO HAY PRODUCTOS A VENDER");
+            return;
+        }
+
+        saleId = ingresoEnteros(500, "Ingrese el ID del producto que desea vender: ");
+        for (Producto p: productos){
+            if (p.getId() == saleId){
+                found = true;
+                if (p.getAmount() == 0){
+                    entry.nextLine();
+                    restock("\tEL FORMATO DE LA FECHA ES INCORRECTO");
+                    restockAmount = ingresoEnteros(maxSpace, "Ingrese la cantidad para reabastecer el producto: ");
+                    p.setAmount(p.getAmount() + restockAmount);
+                    maxSpace-=restockAmount;
+                    nuevoCost = (restockAmount * p.getPvp());
+                    maxBudget-=nuevoCost;
+                    System.out.println("====== SE HA REABASTECIDO CON EXITO ======");
+                    System.out.println("AHORA TIENE: " + p.getAmount() + " UNIDADES");
+                    System.out.println("ESPACIO: " + maxSpace);
+                    System.out.println("PRESUPUESTO: $" + maxBudget);
+                    System.out.println("=========================================");
+                    System.out.println("\tSE PROCEDE A LA VENTA");
+                }
+                entry.nextLine();
+                saleDate = allowSaleDate("Información no valida, ingrese nuevamente");
+                System.out.println("=====================================");
+                System.out.println("El producto con nombre: " + p.getName()
+                        + "\nID: " + saleId
+                        + "\nCantidad disponible: " + p.getAmount());
+                System.out.println("=====================================");
+                saleAmount = ingresoEnteros(p.getAmount(), "Ingrese la cantidad a vender: ");
+                p.setAmount(amount - saleAmount);
+                System.out.println("\tUNIDADES: " + p.getAmount());
+                maxSpace+=saleAmount;
+                System.out.println("\tESPACIO: " + maxSpace);
+                deliveryDate = deliveryTime(saleDate);
+                System.out.println("El producto llegara en un limite de " + MAXTIME + " dias, es decir el " + deliveryDate);
+                sale = (pvp * saleAmount);
+                System.out.print("\tLa venta se realiza por un precio de: $" + sale);
+                maxBudget+=sale;
+                System.out.println("\tPRESUPUESTO: " + maxBudget);
+                break;
+            }
+        }
+
+        if (!found){
+            System.out.println("\t=== EL ID ingresado no existe en el inventario para vender ===\n");
+        }
+
+    }
 }

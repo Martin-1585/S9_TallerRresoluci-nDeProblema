@@ -1,5 +1,6 @@
 import java.util.Scanner;
 
+
 public class GestionDeInventario {
     public static void main(String[] args) {
         /**Declaración de objetos*/
@@ -11,7 +12,7 @@ public class GestionDeInventario {
         do {
             System.out.println("\n\t=== SIMULADOR DE GESTION DE INVENTARIO ===\n");
             inventario.mostrarMenu();
-            opcion = inventario.valoresSinReduccion(7, "Ingrese una opción: ");
+            opcion = inventario.ingresoEnteros(7, "Ingrese una opción: ");
             switch (opcion){
                 case 1:
                     inventario.ingresarDatos();
@@ -26,7 +27,7 @@ public class GestionDeInventario {
                     inventario.editarProducto();
                     break;
                 case 5:
-
+                    inventario.venderProductos();
                     break;
                 default:
                     break;
