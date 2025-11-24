@@ -4,7 +4,6 @@ import udla.molalla.S9ResolucionProblemas.clases.Inventario;
 
 import java.util.Scanner;
 
-
 public class GestionDeInventario {
     public static void main(String[] args) {
         /**Declaración de objetos*/
