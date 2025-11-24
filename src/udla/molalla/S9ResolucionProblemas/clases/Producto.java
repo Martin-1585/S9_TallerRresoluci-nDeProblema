@@ -11,17 +11,19 @@ public class Producto {
     private static int contador = 1;
     private int id;
     private double cost;
+    private double totalCost;
     /**Declaración de constructores*/
     public Producto() {
     }
 
-    public Producto(String name, int amount, LocalDate restockDate, double pvp, double cost) {
+    public Producto(String name, int amount, LocalDate restockDate, double pvp, double cost, double totalCost) {
         this.name = name;
         this.amount = amount;
         this.restockDate = restockDate;
         this.pvp = pvp;
         this.id = contador++;
         this.cost = cost;
+        this.totalCost = totalCost;
     }
     /**Métodos propios de Java*/
 
@@ -61,6 +63,14 @@ public class Producto {
         return cost;
     }
 
+    public double getTotalCost() {
+        return totalCost;
+    }
+
+    public void setTotalCost(double totalCost) {
+        this.totalCost = totalCost;
+    }
+
     public void setCost(double cost) {
         this.cost = cost;
     }
@@ -72,12 +82,12 @@ public class Producto {
     /**Métodos propios del desarrollador*/
     public void mostrarInfo(){
         System.out.println("ID:" + id +
-                "\nNombre:" + name +
-                "\nCantidad: " + amount +
-                "\nFecha de reabastecimiento:" + restockDate +
-                "\nPVP: $" + pvp +
-                "\nCosto: $" + cost);
-
+                "\nNombre:" + getName() +
+                "\nCantidad: " + getAmount() +
+                "\nFecha de reabastecimiento:" + getRestockDate() +
+                "\nPVP: $" + getPvp() +
+                "\nCosto unitario: $ " + getCost() +
+                "\nCosto Total: $ " + getTotalCost());
     }
 
     public void mostrarIds(){
